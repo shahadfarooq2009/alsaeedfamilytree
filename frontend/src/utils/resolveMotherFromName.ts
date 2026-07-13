@@ -1,0 +1,1 @@
+export { resolveMotherFromName } from './resolveParentFromName';

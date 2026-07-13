@@ -1,0 +1,566 @@
+.family-map-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 620px;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.family-map-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: default;
+  touch-action: none;
+}
+
+.family-map-viewport.is-move-mode {
+  cursor: grab;
+}
+
+.family-map-viewport.is-move-mode:active {
+  cursor: grabbing;
+}
+
+.family-map-viewport.is-position-locked {
+  cursor: default;
+}
+
+.family-map-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+.family-map-lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.family-map-link {
+  stroke: #ffffff;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.family-card {
+  position: absolute;
+  width: 96px;
+  height: 66px;
+  z-index: 2;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 1px solid rgba(170, 135, 75, 0.45);
+  background: linear-gradient(180deg, rgba(251, 249, 243, 0.98), rgba(246, 242, 232, 0.96));
+  box-shadow: 0 4px 14px rgba(70, 55, 28, 0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 6px 6px;
+  user-select: none;
+  text-align: center;
+  color: #2f2b1f;
+}
+
+.family-card-root {
+  width: 118px;
+  height: 82px;
+  padding-top: 18px;
+  border-color: rgba(175, 128, 46, 0.75);
+  box-shadow: 0 6px 16px rgba(92, 70, 20, 0.18);
+}
+
+.family-initial {
+  width: 27px;
+  height: 27px;
+  border-radius: 999px;
+  background: #667657;
+  color: #fff7e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.family-name {
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.family-role {
+  margin-top: 1px;
+  font-size: 10px;
+  line-height: 1.1;
+  color: rgba(47, 43, 31, 0.62);
+  white-space: nowrap;
+}
+
+.family-count {
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 1;
+  color: rgba(47, 43, 31, 0.68);
+  white-space: nowrap;
+}
+
+.family-map-toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  max-width: calc(100% - 24px);
+  border-radius: 999px;
+  background: rgba(255, 252, 244, 0.86);
+  border: 1px solid rgba(170, 135, 75, 0.25);
+  box-shadow: 0 10px 25px rgba(70, 55, 28, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.family-map-move-btn {
+  position: absolute;
+  top: 18px;
+  inset-inline-start: 18px;
+  z-index: 6;
+  border: 1px solid rgba(170, 135, 75, 0.35);
+  border-radius: 999px;
+  padding: 11px 18px;
+  background: rgba(255, 252, 244, 0.92);
+  color: #4f4a3a;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(70, 55, 28, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.family-map-move-btn:hover {
+  background: rgba(102, 118, 87, 0.11);
+}
+
+.family-map-move-btn.is-active {
+  background: rgba(102, 118, 87, 0.2);
+  color: #3d4635;
+  border-color: rgba(102, 118, 87, 0.45);
+}
+
+.family-map-move-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.family-map-move-btn:disabled:hover {
+  background: rgba(255, 252, 244, 0.92);
+}
+
+.family-map-toolbar button {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 15px;
+  background: transparent;
+  color: #4f4a3a;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.family-map-toolbar button:hover {
+  background: rgba(102, 118, 87, 0.11);
+}
+
+.family-map-toolbar button.is-active {
+  background: rgba(102, 118, 87, 0.18);
+  color: #3d4635;
+}
+
+.family-map-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.family-map-toolbar button:disabled:hover {
+  background: transparent;
+}
+
+.family-map-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5c6652;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* ---- View-mode toggle icon ---- */
+.family-map-view-btn {
+  position: absolute;
+  top: 18px;
+  inset-inline-end: 18px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(170, 135, 75, 0.35);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: rgba(255, 252, 244, 0.92);
+  color: #4f4a3a;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(70, 55, 28, 0.14);
+  backdrop-filter: blur(10px);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.family-map-view-btn:hover {
+  background: rgba(102, 118, 87, 0.11);
+}
+
+.family-map-view-btn.is-active {
+  background: rgba(90, 118, 74, 0.92);
+  color: #f6fbef;
+  border-color: rgba(90, 118, 74, 0.6);
+}
+
+.family-map-view-icon {
+  stroke: currentColor;
+}
+
+.family-map-view-icon rect {
+  stroke: currentColor;
+  stroke-width: 1.6;
+  fill: none;
+}
+
+.family-map-view-icon path {
+  stroke: currentColor;
+}
+
+/* ---- Botanical tree view ---- */
+.family-map-canvas.is-tree-view {
+  background:
+    radial-gradient(140% 80% at 50% 100%, rgba(120, 145, 96, 0.16), transparent 60%),
+    radial-gradient(120% 90% at 50% 0%, rgba(250, 248, 241, 0.4), transparent 70%);
+}
+
+.botanical-tree {
+  position: absolute;
+  inset: 0;
+}
+
+.botanical-branches {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.botanical-branch {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: botanical-grow 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.botanical-filler-leaves {
+  pointer-events: none;
+}
+
+.botanical-filler-sprite {
+  opacity: 0;
+  transform-origin: center;
+  animation: botanical-sprite-in 0.42s ease forwards;
+}
+
+.botanical-leaf-cluster {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  display: block;
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  animation: botanical-cluster-in 0.55s ease forwards;
+  transition: filter 0.15s ease;
+}
+
+.botanical-leaf-cluster.is-node {
+  width: 64px;
+  height: 64px;
+  z-index: 2;
+}
+
+.botanical-leaf-cluster:hover,
+.botanical-leaf-cluster.is-labeled,
+.botanical-leaf-cluster:focus-visible {
+  z-index: 6;
+  filter: brightness(1.08) saturate(1.05);
+}
+
+.botanical-leaf-cluster:focus-visible {
+  outline: 2px solid #2f5320;
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+.botanical-leaf-cluster-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.botanical-cluster-sprite {
+  opacity: 0;
+  transform-origin: center;
+  animation: botanical-sprite-in 0.38s ease forwards;
+}
+
+.botanical-leaf-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  transform: translateX(-50%) translateY(4px);
+  max-width: 96px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(34, 58, 28, 0.88);
+  color: #f2fbe8;
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 10px rgba(28, 44, 20, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.botanical-leaf-cluster:hover .botanical-leaf-label,
+.botanical-leaf-cluster.is-labeled .botanical-leaf-label,
+.botanical-leaf-cluster:focus-visible .botanical-leaf-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.botanical-founder {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 10px 18px;
+  border: 1.5px solid rgba(74, 51, 28, 0.6);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #6b4a2c 0%, #4f351d 100%);
+  color: #fbeed8;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(43, 30, 12, 0.35);
+  opacity: 0;
+  animation: botanical-cluster-in 0.55s ease forwards;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.botanical-founder:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+  box-shadow: 0 10px 24px rgba(43, 30, 12, 0.42);
+}
+
+.botanical-founder-name {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.botanical-founder-role {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(251, 238, 216, 0.75);
+  white-space: nowrap;
+}
+
+@keyframes botanical-grow {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes botanical-cluster-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes botanical-sprite-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- Botanical view as a standalone / overlay surface ---- */
+.botanical-view-root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.family-map-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.botanical-view-toolbar {
+  bottom: 26px;
+}
+
+.botanical-view-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #faf8f1 0%, #f3efe4 55%, #ece6d7 100%);
+  animation: botanical-overlay-in 0.25s ease;
+}
+
+@keyframes botanical-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.reference-view-toggle {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 1300;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: 1px solid rgba(90, 118, 74, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 252, 244, 0.94);
+  box-shadow: 0 10px 24px rgba(43, 66, 25, 0.2);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  color: #3d4635;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.reference-view-toggle:hover {
+  background: rgba(102, 118, 87, 0.1);
+}
+
+.reference-view-toggle.is-on {
+  background: rgba(90, 118, 74, 0.12);
+  border-color: rgba(79, 128, 56, 0.45);
+}
+
+.reference-view-toggle-label {
+  font-weight: 800;
+  font-size: 13.5px;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.view-switch {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+}
+
+.view-switch-track {
+  position: relative;
+  width: 62px;
+  height: 32px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #dfe3d5, #cfd6c2);
+  box-shadow: inset 0 1px 3px rgba(43, 66, 25, 0.25);
+  transition: background 0.25s ease;
+}
+
+.reference-view-toggle.is-on .view-switch-track {
+  background: linear-gradient(135deg, #6a9c4c, #4f8038);
+}
+
+.reference-view-toggle.is-on .view-switch-thumb {
+  transform: translateX(30px);
+  color: #4f8038;
+}
+
+.view-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #fffdf7;
+  color: #6a7a58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(43, 66, 25, 0.3);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.view-switch-thumb .family-map-view-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.reference-view-toggle:focus-visible {
+  outline: 2px solid #4f8038;
+  outline-offset: 2px;
+}

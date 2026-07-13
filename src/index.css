@@ -1,0 +1,460 @@
+@import "tailwindcss";
+
+@theme {
+  --font-arabic: "Segoe UI", Tahoma, "Noto Naskh Arabic", Arial, sans-serif;
+  --color-olive-900: #3d4a2c;
+  --color-olive-700: #5c6b44;
+  --color-sage-500: #8fa67a;
+  --color-sage-300: #b8c9a8;
+  --color-ivory-100: #f7f5ef;
+  --color-gold-500: #c9a227;
+  --color-gold-300: #e8d48b;
+}
+
+html {
+  font-family: var(--font-arabic);
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--color-ivory-100) 0%, #eef2e8 100%);
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.families-page {
+  min-height: 100dvh;
+  overflow: auto;
+  padding: 32px 20px 48px;
+  color: var(--color-olive-900);
+}
+
+.families-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto 28px;
+}
+
+.families-page__eyebrow {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--color-gold-500);
+}
+
+.families-page h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.families-page__subtitle {
+  margin: 8px 0 0;
+  color: #6b6f5c;
+  line-height: 1.5;
+}
+
+.families-page__logout,
+.families-page__card-link,
+.families-page__card-import,
+.families-page__card-delete,
+.create-family-form__submit,
+.create-family-form__open {
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.families-page__logout {
+  border: 1px solid var(--color-sage-300);
+  background: #fff;
+  color: var(--color-olive-900);
+}
+
+.families-page__section {
+  max-width: 760px;
+  margin: 0 auto 28px;
+}
+
+.families-page__section h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.families-page__error {
+  max-width: 760px;
+  margin: 0 auto 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b42318;
+  border: 1px solid #fecaca;
+}
+
+.families-page__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.families-page__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(184, 201, 168, 0.55);
+}
+
+.families-page__card-body strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.families-page__card-tag,
+.family-switcher__tag {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(201, 162, 39, 0.15);
+  color: #7a6520;
+}
+
+.families-page__card-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6b6f5c;
+}
+
+.families-page__card-link {
+  text-decoration: none;
+  background: var(--color-olive-700);
+  color: #fff;
+  border: none;
+  white-space: nowrap;
+}
+
+.families-page__card-import {
+  border: 1px solid #c8d8f0;
+  background: #f5f9ff;
+  color: #1d4f91;
+  white-space: nowrap;
+}
+
+.families-page__card-import:hover {
+  background: #e8f1fc;
+}
+
+.families-page__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.families-page__card-delete {
+  border: 1px solid #f5c2c2;
+  background: #fff5f5;
+  color: #b42318;
+  white-space: nowrap;
+}
+
+.families-page__card-delete:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.families-page__card-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.create-family-form {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(184, 201, 168, 0.55);
+}
+
+.create-family-form__title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.create-family-form__hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #6b6f5c;
+  line-height: 1.45;
+}
+
+.create-family-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.create-family-form__field input {
+  border: 1px solid rgba(184, 201, 168, 0.7);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.create-family-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.create-family-form__submit {
+  background: var(--color-olive-700);
+  color: #fff;
+  border: none;
+}
+
+.create-family-form__open {
+  background: rgba(201, 162, 39, 0.18);
+  color: var(--color-olive-900);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+}
+
+.family-switcher__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.family-switcher__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--color-olive-900);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(184, 201, 168, 0.55);
+}
+
+.family-switcher__item.is-active {
+  background: rgba(92, 107, 68, 0.12);
+  border-color: var(--color-olive-700);
+  font-weight: 700;
+}
+
+.excel-import-overlay {
+  z-index: 1600;
+}
+
+.excel-import-modal {
+  position: relative;
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  margin: 24px auto;
+  padding: 24px 24px 20px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(20, 30, 20, 0.18);
+}
+
+.excel-import-modal__close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: #f3f5ef;
+  color: #4a5240;
+  cursor: pointer;
+}
+
+.excel-import-modal__eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--color-gold-500);
+}
+
+.excel-import-modal__title {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+}
+
+.excel-import-modal__subtitle {
+  margin: 0 0 16px;
+  color: #6b6f5c;
+}
+
+.excel-import-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.excel-import-modal__template-btn,
+.excel-import-modal__upload-btn {
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.excel-import-modal__template-btn {
+  border: 1px solid var(--color-sage-300);
+  background: #fff;
+  color: var(--color-olive-900);
+}
+
+.excel-import-modal__upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--color-olive-700);
+  color: #fff;
+}
+
+.excel-import-modal__file-input {
+  display: none;
+}
+
+.excel-import-modal__file-name {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #3f4638;
+}
+
+.excel-import-modal__note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8faf5;
+  border: 1px solid #e2ead8;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5a6150;
+}
+
+.excel-import-header-preview {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(30, 36, 28, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.excel-import-header-preview__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 10px 8px;
+  text-align: center;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.excel-import-header-preview__cell:first-child {
+  border-inline-start: none;
+}
+
+.excel-import-header-preview__hint {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: rgba(28, 32, 28, 0.72);
+}
+
+.excel-import-header-preview__label {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #1e221c;
+}
+
+.excel-import-modal__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-inline-end: 8px;
+  vertical-align: middle;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.excel-import-modal__table td strong {
+  display: inline;
+  margin-inline-end: 6px;
+}
+
+.excel-import-modal__table-wrap {
+  overflow: auto;
+  border: 1px solid #e6eadf;
+  border-radius: 14px;
+}
+
+.excel-import-modal__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.excel-import-modal__table th,
+.excel-import-modal__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef1e8;
+  text-align: right;
+  vertical-align: top;
+}
+
+.excel-import-modal__table th {
+  background: #f6f8f2;
+  font-weight: 700;
+}
+
+.excel-import-modal__table code {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #1d4f91;
+  direction: ltr;
+  text-align: left;
+}
+

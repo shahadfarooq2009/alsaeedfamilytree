@@ -1,0 +1,163 @@
+import dagre from 'dagre';
+import type { Edge, Node } from '@xyflow/react';
+
+import { isFounderMember } from './treeLayout/constants';
+import type { FamilyMemberInput } from './treeLayout/types';
+import { getMemberFirstName } from './normalizeFamilyData';
+import { buildFamilyTreeEdgeId, resolveMemberParentId } from './familyTreeFlowPath';
+import { getGenerationThemeClass } from './generationTheme';
+
+export interface FamilyTreeNodeData extends Record<string, unknown> {
+  memberId: number;
+  fullName: string;
+  displayName: string;
+  initial: string;
+  photoUrl?: string | null;
+  childCount: number;
+  generation: number;
+  generationClass: string;
+  isFounder: boolean;
+  isSelected: boolean;
+  isHighlighted: boolean;
+  inSelectedPath: boolean;
+}
+
+const FOUNDER_SIZE = { width: 168, height: 118, nameFontSize: 32 };
+const MEMBER_SIZE = { width: 152, height: 108, nameFontSize: 30 };
+const CHILDREN_FONT_SIZE = 20;
+const CARD_HORIZONTAL_PAD = 28;
+
+function estimateLabelWidth(text: string, fontSize: number, charFactor = 0.58): number {
+  return Math.ceil(text.length * fontSize * charFactor);
+}
+
+function nodeSize(member: FamilyMemberInput, childCount: number) {
+  const isFounder = isFounderMember(member);
+  const base = isFounder ? FOUNDER_SIZE : MEMBER_SIZE;
+  const displayName = getMemberFirstName(member.fullName);
+  const nameWidth = estimateLabelWidth(displayName, base.nameFontSize);
+  const childrenWidth = estimateLabelWidth(`أبناء: ${childCount}`, CHILDREN_FONT_SIZE, 0.5);
+  const width = Math.max(base.width, Math.max(nameWidth, childrenWidth) + CARD_HORIZONTAL_PAD);
+
+  return {
+    width,
+    height: base.height,
+    displayName,
+  };
+}
+
+export function buildFamilyTreeFlowLayout(
+  members: FamilyMemberInput[],
+  selectedId: number | null,
+  highlightIds: number[],
+): { nodes: Node<FamilyTreeNodeData>[]; edges: Edge[] } {
+  if (members.length === 0) {
+    return { nodes: [], edges: [] };
+  }
+
+  try {
+    return layoutWithDagre(members, selectedId, highlightIds);
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('[FamilyTreeFlow] dagre layout failed', error);
+    }
+    return { nodes: [], edges: [] };
+  }
+}
+
+function layoutWithDagre(
+  members: FamilyMemberInput[],
+  selectedId: number | null,
+  highlightIds: number[],
+): { nodes: Node<FamilyTreeNodeData>[]; edges: Edge[] } {
+  const childCountById = new Map<number, number>();
+  const memberIds = new Set(members.map((member) => member.id));
+
+  members.forEach((member) => {
+    const parentId = resolveMemberParentId(member);
+    if (parentId == null) return;
+    childCountById.set(parentId, (childCountById.get(parentId) ?? 0) + 1);
+  });
+
+  const nodes: Node<FamilyTreeNodeData>[] = members.map((member) => {
+    const childCount = childCountById.get(member.id) ?? 0;
+    const size = nodeSize(member, childCount);
+    return {
+      id: String(member.id),
+      type: 'familyMember',
+      position: { x: 0, y: 0 },
+      data: {
+        memberId: member.id,
+        fullName: member.fullName,
+        displayName: size.displayName,
+        initial: member.initial,
+        photoUrl: member.photoUrl ?? null,
+        childCount,
+        generation: member.generation,
+        generationClass: getGenerationThemeClass(member.generation),
+        isFounder: isFounderMember(member),
+        isSelected: selectedId === member.id,
+        isHighlighted: highlightIds.includes(member.id),
+        inSelectedPath: false,
+      },
+      draggable: false,
+      selectable: false,
+      width: size.width,
+      height: size.height,
+    };
+  });
+
+  const edges: Edge[] = [];
+  members.forEach((member) => {
+    const parentId = resolveMemberParentId(member);
+    if (parentId == null || !memberIds.has(parentId)) return;
+    edges.push({
+      id: buildFamilyTreeEdgeId(parentId, member.id),
+      source: String(parentId),
+      target: String(member.id),
+      type: 'smoothstep',
+      style: {
+        stroke: '#5c4828',
+        strokeWidth: 3.75,
+      },
+    });
+  });
+
+  const graph = new dagre.graphlib.Graph();
+  graph.setDefaultEdgeLabel(() => ({}));
+  graph.setGraph({
+    rankdir: 'BT',
+    nodesep: 22,
+    ranksep: 72,
+    marginx: 32,
+    marginy: 36,
+  });
+
+  nodes.forEach((node) => {
+    const width = node.width ?? MEMBER_SIZE.width;
+    const height = node.height ?? MEMBER_SIZE.height;
+    graph.setNode(node.id, { width, height });
+  });
+
+  edges.forEach((edge) => {
+    graph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(graph);
+
+  const layoutedNodes = nodes.map((node) => {
+    const position = graph.node(node.id);
+    const width = node.width ?? MEMBER_SIZE.width;
+    const height = node.height ?? MEMBER_SIZE.height;
+    return {
+      ...node,
+      zIndex: 2,
+      position: {
+        x: position.x - width / 2,
+        y: position.y - height / 2,
+      },
+    };
+  });
+
+  return { nodes: layoutedNodes, edges };
+}

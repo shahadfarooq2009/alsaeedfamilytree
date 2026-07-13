@@ -1,0 +1,126 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { PersonSummary } from '../types/person';
+import type { TreePersonNode } from '../types/tree';
+import { BotanicalTreeCanvas } from '../components/tree/BotanicalTreeCanvas';
+import { PersonDetailsDrawer } from '../components/tree/PersonDetailsDrawer';
+import { TreeSearch } from '../components/tree/TreeSearch';
+import { getFamily, getFamilyTree } from '../services/personService';
+import { useTreeStore } from '../store/treeStore';
+import { toApiError } from '../lib/api';
+import { applyBotanicalCssVariables } from '../theme/botanicalTree';
+import { botanicalTheme } from '../theme/botanicalTree';
+
+const DEFAULT_FAMILY_ID = Number(import.meta.env.VITE_FAMILY_ID ?? 1);
+const SEARCH_HIGHLIGHT_MS = 4000;
+
+export function FamilyTreePage() {
+  const [familyName, setFamilyName] = useState<string | null>(null);
+  const [roots, setRoots] = useState<TreePersonNode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchFocusPersonId, setSearchFocusPersonId] = useState<number | null>(null);
+
+  const selectedPersonId = useTreeStore((state) => state.selectedPersonId);
+  const setSelectedPersonId = useTreeStore((state) => state.setSelectedPersonId);
+  const setHighlightedPersonId = useTreeStore((state) => state.setHighlightedPersonId);
+
+  useEffect(() => {
+    applyBotanicalCssVariables();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadTree() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [familyResponse, treeResponse] = await Promise.all([
+          getFamily(DEFAULT_FAMILY_ID),
+          getFamilyTree(DEFAULT_FAMILY_ID),
+        ]);
+
+        if (!active) return;
+
+        setFamilyName(familyResponse.data.name);
+        setRoots(treeResponse.data as TreePersonNode[]);
+      } catch (err) {
+        if (active) setError(toApiError(err).message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadTree();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSearchSelect = (person: PersonSummary) => {
+    setHighlightedPersonId(person.id);
+    setSearchFocusPersonId(person.id);
+    setSelectedPersonId(person.id);
+
+    window.setTimeout(() => {
+      const currentSelected = useTreeStore.getState().selectedPersonId;
+      if (currentSelected !== person.id) {
+        setHighlightedPersonId(null);
+      }
+    }, SEARCH_HIGHLIGHT_MS);
+  };
+
+  return (
+    <div className="relative h-screen w-screen overflow-hidden" dir="rtl" lang="ar">
+      {loading && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center text-[#5c6652]"
+          style={{
+            background: `linear-gradient(180deg, ${botanicalTheme.colors.canvasBg}, ${botanicalTheme.colors.canvasBgEnd})`,
+          }}
+        >
+          جاري تحميل شجرة العائلة...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#f3efe6] p-6 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && roots.length === 0 && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#f3efe6] p-6 text-center text-[#5c6652]">
+          <p className="text-lg font-medium text-[#2f3628]">لا توجد بيانات للشجرة بعد</p>
+          <p className="mt-2 text-sm">أضف مؤسس العائلة وأفرادها من صفحة إضافة فرد.</p>
+          <Link
+            to="/"
+            className="mt-5 rounded-xl px-5 py-3 text-sm text-white"
+            style={{ background: botanicalTheme.colors.olive }}
+          >
+            الانتقال لإضافة فرد
+          </Link>
+        </div>
+      )}
+
+      {!loading && !error && roots.length > 0 && (
+        <BotanicalTreeCanvas
+          roots={roots}
+          searchFocusPersonId={searchFocusPersonId}
+          familyName={familyName}
+          searchSlot={
+            <TreeSearch familyId={DEFAULT_FAMILY_ID} onSelect={handleSearchSelect} />
+          }
+        />
+      )}
+
+      <PersonDetailsDrawer
+        familyId={DEFAULT_FAMILY_ID}
+        personId={selectedPersonId}
+        onClose={() => setSelectedPersonId(null)}
+      />
+    </div>
+  );
+}

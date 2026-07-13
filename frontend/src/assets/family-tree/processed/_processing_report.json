@@ -1,0 +1,33 @@
+{
+  "processed": [
+    "foliage-clusters.png.png",
+    "member-leaf-gen-1.png.png",
+    "member-leaf-gen-2.png.png",
+    "member-leaf-gen-3.png.png",
+    "member-leaf-gen-4.png.png",
+    "member-leaf-gen-5.png.png",
+    "member-leaf-selected.png.png",
+    "tree-trunk.png.png"
+  ],
+  "skipped": [],
+  "failed": [],
+  "manual_cleanup": [
+    "foliage-clusters.png.png: interior transparency pockets detected",
+    "foliage-clusters.png.png: checker speckles inside artwork (14.1%)",
+    "member-leaf-gen-1.png.png: interior transparency pockets detected",
+    "member-leaf-gen-1.png.png: checker speckles inside artwork (35.6%)",
+    "member-leaf-gen-2.png.png: interior transparency pockets detected",
+    "member-leaf-gen-2.png.png: checker speckles inside artwork (35.7%)",
+    "member-leaf-gen-3.png.png: interior transparency pockets detected",
+    "member-leaf-gen-3.png.png: checker speckles inside artwork (34.5%)",
+    "member-leaf-gen-4.png.png: interior transparency pockets detected",
+    "member-leaf-gen-4.png.png: checker speckles inside artwork (34.6%)",
+    "member-leaf-gen-5.png.png: interior transparency pockets detected",
+    "member-leaf-gen-5.png.png: checker speckles inside artwork (10.9%)",
+    "member-leaf-gen-5.png.png: wide semi-transparent fringe (69.0%) \u2014 check for halos",
+    "member-leaf-selected.png.png: interior transparency pockets detected",
+    "member-leaf-selected.png.png: checker speckles inside artwork (33.6%)",
+    "tree-trunk.png.png: interior transparency pockets detected",
+    "tree-trunk.png.png: checker speckles inside artwork (30.5%)"
+  ]
+}

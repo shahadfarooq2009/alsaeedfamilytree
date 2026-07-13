@@ -1,0 +1,737 @@
+import {
+  Component,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type MouseEvent,
+  type RefObject,
+} from 'react';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  type Node,
+  type NodeMouseHandler,
+  type ReactFlowInstance,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
+import type { FamilyMemberInput } from '../../utils/treeLayout/types';
+import {
+  buildFamilyTreeFlowLayout,
+  type FamilyTreeNodeData,
+} from '../../utils/buildFamilyTreeFlowLayout';
+import {
+  applyPathHighlightToEdges,
+  applyPathHighlightToMemberNodes,
+  getAncestorPathIds,
+  getHighlightedEdgeIds,
+} from '../../utils/familyTreeFlowPath';
+import {
+  animateFlowViewport,
+  computeCenteredViewport,
+  computeFitViewport,
+  createViewportTreeBackgroundNode,
+  TREE_SVG_NODE_ID,
+  viewportsApproximatelyEqual,
+  VIEWPORT_FOCUS_ZOOM_IN_MS,
+  VIEWPORT_FOCUS_ZOOM_OUT_MS,
+  zoomViewportAroundCenter,
+  type FlowViewport,
+  type ViewportAnimationHandle,
+} from '../../utils/familyTreeFlowViewport';
+import { FamilyTreeFlowNode } from './FamilyTreeFlowNode';
+import { TreeSvgNode } from './TreeSvgNode';
+import './FamilyTreeFlow.css';
+
+const nodeTypes = {
+  familyMember: FamilyTreeFlowNode,
+  treeSvg: TreeSvgNode,
+};
+
+const TARGET_ZOOM = 1.6;
+const INITIAL_FIT_PADDING = 0.09;
+const INITIAL_FIT_DURATION_MS = VIEWPORT_FOCUS_ZOOM_OUT_MS;
+const MIN_ZOOM = 0.08;
+const MAX_ZOOM = 1.8;
+const TOOLBAR_VIEWPORT_DURATION_MS = 0;
+
+type FlowCanvasNode = Node<FamilyTreeNodeData | Record<string, never>>;
+
+function flowNodesSignature(nodes: FlowCanvasNode[]): string {
+  return nodes.map((node) => {
+    const width = node.width ?? 0;
+    const height = node.height ?? 0;
+    return `${node.id}:${node.position.x.toFixed(1)},${node.position.y.toFixed(1)},${width.toFixed(1)},${height.toFixed(1)}`;
+  }).join('|');
+}
+
+function readViewportDimensions(
+  membersRef: RefObject<HTMLDivElement | null> | undefined,
+  cached: { width: number; height: number },
+): { width: number; height: number } {
+  const element = membersRef?.current;
+  if (element) {
+    const rect = element.getBoundingClientRect();
+    const parentRect = element.parentElement?.getBoundingClientRect();
+    const width = Math.max(rect.width, parentRect?.width ?? 0);
+    const height = Math.max(rect.height, parentRect?.height ?? 0);
+    if (width > 0 && height > 0) {
+      return { width, height };
+    }
+  }
+
+  return cached;
+}
+
+export interface FamilyTreeFlowHandle {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  fitView: () => void;
+  focusMember: (id: number) => boolean;
+}
+
+export type FamilyTreeFlowControls = FamilyTreeFlowHandle;
+
+interface FamilyTreeFlowProps {
+  members: FamilyMemberInput[];
+  selectedId: number | null;
+  highlightIds: number[];
+  membersRef?: React.RefObject<HTMLDivElement | null>;
+  onBeginMemberFocus: (id: number) => boolean;
+  onCompleteMemberFocus: (id: number) => void;
+  onHover?: (id: number | null) => void;
+  onViewportChange?: () => void;
+  onDefaultViewportChange?: (isAtDefault: boolean) => void;
+  onPaneClick?: () => void;
+  onViewportPanStart?: () => void;
+  onResetViewport?: () => void;
+  onFlowControlsReady?: (controls: FamilyTreeFlowControls) => void;
+  showTreeBackground?: boolean;
+}
+
+interface FlowViewportBridgeProps {
+  flowInstanceRef: React.MutableRefObject<ReactFlowInstance | null>;
+  viewportSize: { width: number; height: number };
+  initialFitDoneRef: React.MutableRefObject<boolean>;
+  onViewportReady: () => void;
+  onInitialFit: (instance: ReactFlowInstance) => void;
+}
+
+function FlowViewportBridge({
+  flowInstanceRef,
+  viewportSize,
+  initialFitDoneRef,
+  onViewportReady,
+  onInitialFit,
+}: FlowViewportBridgeProps) {
+  const instance = useReactFlow();
+
+  useEffect(() => {
+    flowInstanceRef.current = instance;
+  }, [flowInstanceRef, instance]);
+
+  useEffect(() => {
+    if (initialFitDoneRef.current) return;
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) return;
+
+    initialFitDoneRef.current = true;
+    onInitialFit(instance);
+    onViewportReady();
+  }, [initialFitDoneRef, instance, onInitialFit, onViewportReady, viewportSize.height, viewportSize.width]);
+
+  return null;
+}
+
+class FamilyTreeFlowErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; message: string }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, message: '' };
+  }
+
+  static getDerivedStateFromError(error: Error): { hasError: boolean; message: string } {
+    return { hasError: true, message: error.message };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[FamilyTreeFlow] render error', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="family-tree-flow-empty">
+          تعذّر عرض الشجرة. حدّث الصفحة أو أعد تشغيل السيرفر.
+          {import.meta.env.DEV && this.state.message ? (
+            <p style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>{this.state.message}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const FamilyTreeFlowInner = forwardRef<FamilyTreeFlowHandle, FamilyTreeFlowProps>(
+  function FamilyTreeFlowInner(
+    {
+      members,
+      selectedId,
+      highlightIds,
+      membersRef,
+      onBeginMemberFocus,
+      onCompleteMemberFocus,
+      onHover,
+      onViewportChange,
+      onDefaultViewportChange,
+      onPaneClick,
+      onViewportPanStart,
+      onResetViewport,
+      onFlowControlsReady,
+      showTreeBackground = true,
+    },
+    ref,
+  ) {
+    const flowInstanceRef = useRef<ReactFlowInstance | null>(null);
+    const focusCompleteTimerRef = useRef<number | null>(null);
+    const viewportAnimationRef = useRef<ViewportAnimationHandle | null>(null);
+    const isPanningRef = useRef(false);
+    const suppressPaneClickUntilRef = useRef(0);
+    const isViewportAnimatingRef = useRef(false);
+    const lastNodesSignatureRef = useRef('');
+    const viewportNotifyRafRef = useRef<number | null>(null);
+    const baselineViewportRef = useRef<FlowViewport | null>(null);
+    const initialViewportRef = useRef<FlowViewport | null>(null);
+    const memberNodesRef = useRef<ReturnType<typeof buildFamilyTreeFlowLayout>['nodes']>([]);
+    const viewportSizeRef = useRef({ width: 0, height: 0 });
+    const [viewportReady, setViewportReady] = useState(false);
+    const [isAtDefaultViewport, setIsAtDefaultViewport] = useState(true);
+    const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+    const baselineMinZoomRef = useRef(MIN_ZOOM);
+    const [effectiveMinZoom, setEffectiveMinZoom] = useState(MIN_ZOOM);
+    const initialFitDoneRef = useRef(false);
+    const layout = useMemo(
+      () => buildFamilyTreeFlowLayout(members, selectedId, highlightIds),
+      [members, selectedId, highlightIds],
+    );
+    const memberNodes = useMemo(
+      () => layout.nodes,
+      [layout.nodes],
+    );
+    memberNodesRef.current = memberNodes;
+
+    const selectedPathIds = useMemo(
+      () => (selectedId != null ? getAncestorPathIds(selectedId, members) : []),
+      [members, selectedId],
+    );
+    const highlightedEdgeIds = useMemo(
+      () => getHighlightedEdgeIds(selectedPathIds),
+      [selectedPathIds],
+    );
+    const styledMemberNodes = useMemo(
+      () => applyPathHighlightToMemberNodes(memberNodes, selectedId, selectedPathIds),
+      [memberNodes, selectedId, selectedPathIds],
+    );
+    const styledEdges = useMemo(
+      () => applyPathHighlightToEdges(layout.edges, highlightedEdgeIds),
+      [highlightedEdgeIds, layout.edges],
+    );
+
+    const [nodes, setNodes, onNodesChange] = useNodesState<FlowCanvasNode>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    const syncBackgroundNodes = useCallback(() => {
+      const memberOnly = styledMemberNodes.filter(
+        (node) => node.id !== TREE_SVG_NODE_ID && node.type !== 'treeSvg',
+      );
+
+      const { width, height } = readViewportDimensions(membersRef, viewportSizeRef.current);
+      if (width <= 0 || height <= 0 || memberOnly.length === 0) {
+        setNodes(memberOnly);
+        return;
+      }
+
+      viewportSizeRef.current = { width, height };
+
+      const instance = flowInstanceRef.current;
+      const viewport = instance?.getViewport()
+        ?? computeFitViewport(memberOnly, width, height, INITIAL_FIT_PADDING, MAX_ZOOM);
+
+      const nextNodes = showTreeBackground
+        ? [
+            createViewportTreeBackgroundNode(width, height, viewport),
+            ...memberOnly,
+          ]
+        : memberOnly;
+
+      const signature = flowNodesSignature(nextNodes);
+      if (signature === lastNodesSignatureRef.current) return;
+      lastNodesSignatureRef.current = signature;
+      setNodes(nextNodes);
+    }, [membersRef, setNodes, showTreeBackground, styledMemberNodes]);
+
+    const scheduleViewportNotify = useCallback(() => {
+      if (viewportNotifyRafRef.current != null) return;
+      viewportNotifyRafRef.current = requestAnimationFrame(() => {
+        viewportNotifyRafRef.current = null;
+        syncBackgroundNodes();
+        onViewportChange?.();
+      });
+    }, [onViewportChange, syncBackgroundNodes]);
+
+    const sizeObserverCleanupRef = useRef<(() => void) | null>(null);
+
+    const assignFlowRootRef = useCallback((element: HTMLDivElement | null) => {
+      if (membersRef) {
+        membersRef.current = element;
+      }
+
+      sizeObserverCleanupRef.current?.();
+      sizeObserverCleanupRef.current = null;
+
+      if (!element) return;
+
+      const updateSize = () => {
+        const rect = element.getBoundingClientRect();
+        const parentRect = element.parentElement?.getBoundingClientRect();
+        const width = Math.max(rect.width, parentRect?.width ?? 0);
+        const height = Math.max(rect.height, parentRect?.height ?? 0);
+        if (width > 0 && height > 0) {
+          const sizeChanged = (
+            viewportSizeRef.current.width !== width
+            || viewportSizeRef.current.height !== height
+          );
+          viewportSizeRef.current = { width, height };
+          if (sizeChanged) {
+            setViewportSize({ width, height });
+          }
+          syncBackgroundNodes();
+        }
+      };
+
+      updateSize();
+      const observer = new ResizeObserver(updateSize);
+      observer.observe(element);
+      window.addEventListener('resize', updateSize);
+
+      sizeObserverCleanupRef.current = () => {
+        observer.disconnect();
+        window.removeEventListener('resize', updateSize);
+      };
+    }, [membersRef, syncBackgroundNodes]);
+
+    useEffect(() => () => {
+      sizeObserverCleanupRef.current?.();
+      if (viewportNotifyRafRef.current != null) {
+        cancelAnimationFrame(viewportNotifyRafRef.current);
+      }
+    }, []);
+
+    useEffect(() => {
+      lastNodesSignatureRef.current = '';
+      syncBackgroundNodes();
+      setEdges(styledEdges);
+    }, [setEdges, styledEdges, syncBackgroundNodes]);
+
+    const cancelViewportAnimation = useCallback(() => {
+      viewportAnimationRef.current?.cancel();
+      viewportAnimationRef.current = null;
+      isViewportAnimatingRef.current = false;
+    }, []);
+
+    const runViewportAnimation = useCallback((
+      instance: ReactFlowInstance,
+      target: FlowViewport,
+      duration: number,
+      onComplete?: () => void,
+    ) => {
+      cancelViewportAnimation();
+      isViewportAnimatingRef.current = true;
+
+      const handle = animateFlowViewport(
+        () => instance.getViewport(),
+        (viewport) => {
+          void instance.setViewport(viewport);
+        },
+        target,
+        duration,
+        {
+          onFrame: () => onViewportChange?.(),
+          onComplete: () => {
+            viewportAnimationRef.current = null;
+            isViewportAnimatingRef.current = false;
+            onViewportChange?.();
+            onComplete?.();
+          },
+        },
+      );
+
+      viewportAnimationRef.current = handle;
+      return handle.finished;
+    }, [cancelViewportAnimation, onViewportChange]);
+
+    const captureViewportAsDefault = useCallback((
+      instance: Pick<ReactFlowInstance, 'getViewport'>,
+      replaceInitial = false,
+    ) => {
+      const viewport = instance.getViewport();
+      const snapshot: FlowViewport = {
+        x: viewport.x,
+        y: viewport.y,
+        zoom: viewport.zoom,
+      };
+
+      if (replaceInitial || initialViewportRef.current == null) {
+        initialViewportRef.current = snapshot;
+      }
+
+      baselineViewportRef.current = initialViewportRef.current
+        ? { ...initialViewportRef.current }
+        : snapshot;
+
+      const baselineZoom = Math.max(MIN_ZOOM, snapshot.zoom);
+      baselineMinZoomRef.current = baselineZoom;
+      setEffectiveMinZoom(baselineZoom);
+
+      setIsAtDefaultViewport((current) => {
+        if (current) return current;
+        onDefaultViewportChange?.(true);
+        return true;
+      });
+      return snapshot;
+    }, [onDefaultViewportChange]);
+
+    const updateDefaultViewportState = useCallback(() => {
+      const instance = flowInstanceRef.current;
+      const baseline = baselineViewportRef.current;
+      if (!instance || !baseline) return;
+
+      const isAtDefault = viewportsApproximatelyEqual(instance.getViewport(), baseline);
+      setIsAtDefaultViewport((current) => {
+        if (current === isAtDefault) return current;
+        onDefaultViewportChange?.(isAtDefault);
+        return isAtDefault;
+      });
+    }, [onDefaultViewportChange]);
+
+    const runFitView = useCallback(async (
+      instance: ReactFlowInstance,
+      duration = INITIAL_FIT_DURATION_MS,
+      padding = INITIAL_FIT_PADDING,
+    ) => {
+      if (memberNodesRef.current.length === 0) return;
+
+      const { width, height } = readViewportDimensions(membersRef, viewportSizeRef.current);
+      if (width <= 0 || height <= 0) return;
+
+      viewportSizeRef.current = { width, height };
+
+      const viewport = computeFitViewport(
+        memberNodesRef.current,
+        width,
+        height,
+        padding,
+        MAX_ZOOM,
+      );
+
+      cancelViewportAnimation();
+      if (duration > 0) {
+        isViewportAnimatingRef.current = true;
+        await instance.setViewport(viewport, { duration });
+        isViewportAnimatingRef.current = false;
+      } else {
+        await instance.setViewport(viewport);
+      }
+
+      syncBackgroundNodes();
+      captureViewportAsDefault(instance, true);
+      onViewportChange?.();
+    }, [cancelViewportAnimation, captureViewportAsDefault, membersRef, onViewportChange, syncBackgroundNodes]);
+
+    const resetToDefaultViewport = useCallback(async (
+      instance: ReactFlowInstance,
+      duration: number = INITIAL_FIT_DURATION_MS,
+    ) => {
+      if (memberNodesRef.current.length === 0) return;
+
+      cancelViewportAnimation();
+
+      if (focusCompleteTimerRef.current != null) {
+        window.clearTimeout(focusCompleteTimerRef.current);
+        focusCompleteTimerRef.current = null;
+      }
+
+      onResetViewport?.();
+      await runFitView(instance, duration, INITIAL_FIT_PADDING);
+    }, [cancelViewportAnimation, onResetViewport, runFitView]);
+
+    const handleInitialFit = useCallback((instance: ReactFlowInstance) => {
+      window.setTimeout(() => {
+        void runFitView(instance, INITIAL_FIT_DURATION_MS, INITIAL_FIT_PADDING);
+      }, 80);
+    }, [runFitView]);
+
+    useEffect(() => () => {
+      if (focusCompleteTimerRef.current != null) {
+        window.clearTimeout(focusCompleteTimerRef.current);
+      }
+      cancelViewportAnimation();
+    }, [cancelViewportAnimation]);
+
+    const focusMemberById = useCallback((memberId: number): boolean => {
+      const node = memberNodesRef.current.find((entry) => entry.id === String(memberId));
+      const instance = flowInstanceRef.current;
+      const { width, height } = readViewportDimensions(membersRef, viewportSizeRef.current);
+      if (!node || !instance || width <= 0 || height <= 0) return false;
+
+      if (!onBeginMemberFocus(memberId)) return false;
+
+      if (focusCompleteTimerRef.current != null) {
+        window.clearTimeout(focusCompleteTimerRef.current);
+        focusCompleteTimerRef.current = null;
+      }
+
+      const nodeWidth = node.width ?? 152;
+      const nodeHeight = node.height ?? 108;
+      const centerX = node.position.x + nodeWidth / 2;
+      const centerY = node.position.y + nodeHeight / 2;
+      const targetViewport = computeCenteredViewport(
+        centerX,
+        centerY,
+        TARGET_ZOOM,
+        width,
+        height,
+      );
+
+      setIsAtDefaultViewport((current) => {
+        if (!current) return current;
+        onDefaultViewportChange?.(false);
+        return false;
+      });
+
+      void runViewportAnimation(
+        instance,
+        targetViewport,
+        VIEWPORT_FOCUS_ZOOM_IN_MS,
+        () => onCompleteMemberFocus(memberId),
+      );
+
+      return true;
+    }, [
+      membersRef,
+      onBeginMemberFocus,
+      onCompleteMemberFocus,
+      onDefaultViewportChange,
+      runViewportAnimation,
+    ]);
+
+    const zoomByStep = useCallback(async (
+      instance: ReactFlowInstance,
+      direction: 'in' | 'out',
+    ) => {
+      cancelViewportAnimation();
+
+      const baseline = baselineViewportRef.current;
+      if (direction === 'out' && baseline && viewportsApproximatelyEqual(instance.getViewport(), baseline)) {
+        updateDefaultViewportState();
+        return;
+      }
+
+      const { width, height } = readViewportDimensions(membersRef, viewportSizeRef.current);
+      if (width <= 0 || height <= 0) return;
+
+      viewportSizeRef.current = { width, height };
+
+      const target = zoomViewportAroundCenter(
+        instance.getViewport(),
+        width,
+        height,
+        direction,
+        baselineMinZoomRef.current,
+        MAX_ZOOM,
+      );
+
+      if (!target) {
+        updateDefaultViewportState();
+        return;
+      }
+
+      await instance.setViewport(target);
+      syncBackgroundNodes();
+
+      if (direction === 'in') {
+        setIsAtDefaultViewport((current) => {
+          if (!current) return current;
+          onDefaultViewportChange?.(false);
+          return false;
+        });
+      } else {
+        updateDefaultViewportState();
+      }
+      onViewportChange?.();
+    }, [
+      cancelViewportAnimation,
+      membersRef,
+      onDefaultViewportChange,
+      onViewportChange,
+      syncBackgroundNodes,
+      updateDefaultViewportState,
+    ]);
+
+    const buildControls = useCallback((): FamilyTreeFlowControls => ({
+      zoomIn: () => {
+        const instance = flowInstanceRef.current;
+        if (instance) void zoomByStep(instance, 'in');
+      },
+      zoomOut: () => {
+        const instance = flowInstanceRef.current;
+        if (instance) void zoomByStep(instance, 'out');
+      },
+      fitView: () => {
+        const instance = flowInstanceRef.current;
+        if (instance) void resetToDefaultViewport(instance, TOOLBAR_VIEWPORT_DURATION_MS);
+      },
+      focusMember: focusMemberById,
+    }), [focusMemberById, resetToDefaultViewport, zoomByStep]);
+
+    useEffect(() => {
+      if (!viewportReady) return;
+      onFlowControlsReady?.(buildControls());
+    }, [buildControls, onFlowControlsReady, viewportReady]);
+
+    useImperativeHandle(ref, () => buildControls(), [buildControls]);
+
+    const handleDoubleClickReset = useCallback((event: MouseEvent) => {
+      event.preventDefault();
+
+      const instance = flowInstanceRef.current;
+      if (!instance) return;
+
+      void resetToDefaultViewport(instance, VIEWPORT_FOCUS_ZOOM_OUT_MS);
+    }, [resetToDefaultViewport]);
+
+    const shouldIgnoreClickAfterPan = useCallback(() => (
+      isPanningRef.current || performance.now() < suppressPaneClickUntilRef.current
+    ), []);
+
+    const handleNodeClick: NodeMouseHandler = useCallback((_event, node) => {
+      if (shouldIgnoreClickAfterPan()) return;
+      if (node.id === TREE_SVG_NODE_ID || node.type !== 'familyMember') {
+        return;
+      }
+
+      focusMemberById(Number(node.id));
+    }, [focusMemberById, shouldIgnoreClickAfterPan]);
+
+    const handleNodeMouseEnter: NodeMouseHandler = useCallback((_event, node) => {
+      if (node.type !== 'familyMember') return;
+      onHover?.(Number(node.id));
+    }, [onHover]);
+
+    const handleNodeMouseLeave: NodeMouseHandler = useCallback(() => {
+      onHover?.(null);
+    }, [onHover]);
+
+    const handlePaneClick = useCallback(() => {
+      if (shouldIgnoreClickAfterPan()) return;
+      if (focusCompleteTimerRef.current != null) {
+        window.clearTimeout(focusCompleteTimerRef.current);
+        focusCompleteTimerRef.current = null;
+      }
+      onPaneClick?.();
+    }, [onPaneClick, shouldIgnoreClickAfterPan]);
+
+    if (members.length === 0) {
+      return <div className="family-tree-flow-empty">لا يوجد أفراد في الشجرة بعد</div>;
+    }
+
+    return (
+      <div
+        ref={assignFlowRootRef}
+        className={`family-tree-flow-root${viewportReady ? ' is-viewport-ready' : ''}`}
+        onDoubleClick={handleDoubleClickReset}
+      >
+        <ReactFlow
+          className={`family-tree-flow${selectedId != null ? ' has-node-focus' : ''}${!isAtDefaultViewport ? ' is-map-pannable' : ''}`}
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onNodeClick={handleNodeClick}
+          onNodeMouseEnter={handleNodeMouseEnter}
+          onNodeMouseLeave={handleNodeMouseLeave}
+          onPaneClick={handlePaneClick}
+          onMoveStart={(event) => {
+            isPanningRef.current = true;
+            if (event && !isViewportAnimatingRef.current) {
+              onViewportPanStart?.();
+            }
+          }}
+          onMove={() => {
+            scheduleViewportNotify();
+          }}
+          onMoveEnd={() => {
+            isPanningRef.current = false;
+            suppressPaneClickUntilRef.current = performance.now() + 220;
+            if (viewportNotifyRafRef.current != null) {
+              cancelAnimationFrame(viewportNotifyRafRef.current);
+              viewportNotifyRafRef.current = null;
+            }
+            syncBackgroundNodes();
+            onViewportChange?.();
+            updateDefaultViewportState();
+          }}
+          nodeClickDistance={10}
+          fitView={false}
+          minZoom={effectiveMinZoom}
+          maxZoom={MAX_ZOOM}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+          panOnScroll={false}
+          zoomOnScroll
+          panOnDrag={!isAtDefaultViewport}
+          zoomOnPinch
+          zoomOnDoubleClick={false}
+          selectNodesOnDrag={false}
+          preventScrolling
+          proOptions={{ hideAttribution: true }}
+        >
+          <FlowViewportBridge
+            flowInstanceRef={flowInstanceRef}
+            viewportSize={viewportSize}
+            initialFitDoneRef={initialFitDoneRef}
+            onViewportReady={() => setViewportReady(true)}
+            onInitialFit={handleInitialFit}
+          />
+        </ReactFlow>
+      </div>
+    );
+  },
+);
+
+export const FamilyTreeFlow = forwardRef<FamilyTreeFlowHandle, FamilyTreeFlowProps>(
+  function FamilyTreeFlow(props, ref) {
+    return (
+      <FamilyTreeFlowErrorBoundary>
+        <ReactFlowProvider>
+          <FamilyTreeFlowInner {...props} ref={ref} />
+        </ReactFlowProvider>
+      </FamilyTreeFlowErrorBoundary>
+    );
+  },
+);
+
+export default FamilyTreeFlow;
