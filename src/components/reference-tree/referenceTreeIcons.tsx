@@ -174,6 +174,18 @@ export function IconDownload(props: IconProps) {
   );
 }
 
+export function IconKinship(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className="ico" aria-hidden {...props}>
+      <circle cx="8" cy="8" r="3" />
+      <circle cx="16" cy="8" r="3" />
+      <path d="M5.5 20v-2.2a3.3 3.3 0 0 1 5 0V20" />
+      <path d="M13.5 20v-2.2a3.3 3.3 0 0 1 5 0V20" />
+      <path d="M11 11h2" />
+    </svg>
+  );
+}
+
 export function IconPrint(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className="ico" aria-hidden {...props}>

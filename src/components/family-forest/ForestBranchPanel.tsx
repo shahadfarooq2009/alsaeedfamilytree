@@ -3,14 +3,13 @@ import type { Node, NodeProps } from '@xyflow/react';
 
 import type { ForestBranchPanelData } from '../../utils/familyForest/buildFamilyForestLayout';
 
-function ForestBranchPanelComponent({ data, style }: NodeProps<Node<ForestBranchPanelData>>) {
+function ForestBranchPanelComponent({ data }: NodeProps<Node<ForestBranchPanelData>>) {
   if (!data) return null;
 
   return (
     <div
       className={`family-forest-branch-panel is-panel-${data.columnIndex}`}
       style={{
-        ...style,
         '--branch-color': data.branchColor,
       } as CSSProperties}
       aria-label={data.branchName ? `فرع ${data.branchName} — الجيل الثالث` : undefined}

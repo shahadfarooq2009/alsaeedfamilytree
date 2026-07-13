@@ -23,6 +23,8 @@ import { ReferencePersonModal } from './ReferencePersonModal';
 import { ReferenceTreeCanvas } from './ReferenceTreeCanvas';
 import { ShareFamilyTreeModal } from './ShareFamilyTreeModal';
 import { TreeBackgroundPicker } from './TreeBackgroundPicker';
+import { KinshipSidebar } from '../family-forest/KinshipSidebar';
+import { IconKinship } from './referenceTreeIcons';
 import type { FamilyTreeFlowControls, FamilyTreeFlowHandle } from './FamilyTreeFlow';
 import type { ToolbarAction } from './ReferenceTreeToolbar';
 import type { FamilyTreeLayoutOptions } from '../../utils/buildFamilyTreeFlowLayout';
@@ -55,6 +57,7 @@ export function ReferenceTreeApp({
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [kinshipSidebarOpen, setKinshipSidebarOpen] = useState(false);
   const [highlightIds, setHighlightIds] = useState<number[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverPerson, setPopoverPerson] = useState<PersonDetail | PersonSummary | null>(null);
@@ -368,6 +371,8 @@ export function ReferenceTreeApp({
           setShareModalOpen(false);
         } else if (printModalOpen) {
           setPrintModalOpen(false);
+        } else if (kinshipSidebarOpen) {
+          setKinshipSidebarOpen(false);
         } else if (popoverOpen) {
           closePopover();
         }
@@ -375,7 +380,7 @@ export function ReferenceTreeApp({
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [addMemberOpen, avatarEditMemberId, closePopover, fullProfileOpen, popoverOpen, printModalOpen, shareModalOpen]);
+  }, [addMemberOpen, avatarEditMemberId, closePopover, fullProfileOpen, kinshipSidebarOpen, popoverOpen, printModalOpen, shareModalOpen]);
 
   useEffect(() => () => {
     if (highlightTimerRef.current != null) {
@@ -421,9 +426,26 @@ export function ReferenceTreeApp({
         backgroundSettings={backgroundSettings}
       />
 
-      <TreeBackgroundPicker
-        settings={backgroundSettings}
-        onChange={setBackgroundSettings}
+      <div className="tree-bottom-left-tools">
+        <TreeBackgroundPicker
+          settings={backgroundSettings}
+          onChange={setBackgroundSettings}
+        />
+        <button
+          type="button"
+          className="pill tree-kinship-btn"
+          onClick={() => setKinshipSidebarOpen(true)}
+        >
+          <IconKinship />
+          <span>صلة القرابة</span>
+        </button>
+      </div>
+
+      <KinshipSidebar
+        open={kinshipSidebarOpen}
+        members={normalizedMembers}
+        familyId={familyId}
+        onClose={() => setKinshipSidebarOpen(false)}
       />
 
       <ShareFamilyTreeModal

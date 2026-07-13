@@ -1,4 +1,5 @@
-import type { FamilyDetails, PersonSummary } from '../types/person';
+import type { FamilyDetails } from '../services/personService';
+import type { PersonSummary } from '../types/person';
 import type { FamilyMemberInput } from './treeLayout/types';
 
 const CACHE_STORAGE_PREFIX = 'family-tree-bundle:v1:';

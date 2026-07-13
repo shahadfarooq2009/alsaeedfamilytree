@@ -53,6 +53,7 @@ import { ForestFounderRail } from './ForestFounderRail';
 import { ForestInlineMember } from './ForestInlineMember';
 import { ForestLocalEdge } from './ForestLocalEdge';
 import { ForestPageHeader } from './ForestPageHeader';
+import { KinshipSidebar } from './KinshipSidebar';
 import { ForestMemberHoverCard } from './ForestMemberHoverCard';
 import { ForestCardHoverContext } from './ForestCardHoverContext';
 import { BranchExpandedView, type BranchExpandState } from './BranchExpandedView';
@@ -61,6 +62,7 @@ import { EditMemberModal } from '../reference-tree/EditMemberModal';
 import { PrintFamilyTreeModal } from '../reference-tree/PrintFamilyTreeModal';
 import { ShareFamilyTreeModal } from '../reference-tree/ShareFamilyTreeModal';
 import { TreeBackgroundPicker } from '../reference-tree/TreeBackgroundPicker';
+import { IconKinship } from '../reference-tree/referenceTreeIcons';
 import type { FamilyTreeFlowHandle } from '../reference-tree/FamilyTreeFlow';
 import {
   loadTreeBackgroundSettings,
@@ -720,6 +722,7 @@ export function FamilyForestView({
   const [editMemberId, setEditMemberId] = useState<number | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [kinshipSidebarOpen, setKinshipSidebarOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [backgroundSettings, setBackgroundSettings] = useState<TreeBackgroundSettings>(() =>
     loadTreeBackgroundSettings(familyId),
@@ -793,12 +796,13 @@ export function FamilyForestView({
   }, [onMemberSelect]);
 
   useEffect(() => {
-    const modalOpen = addMemberOpen || shareModalOpen || printModalOpen || editMemberId != null;
+    const modalOpen = addMemberOpen || shareModalOpen || printModalOpen || editMemberId != null || kinshipSidebarOpen;
     if (!modalOpen && searchFocusMemberId == null) return undefined;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (printModalOpen) setPrintModalOpen(false);
+        if (kinshipSidebarOpen) setKinshipSidebarOpen(false);
+        else if (printModalOpen) setPrintModalOpen(false);
         else if (shareModalOpen) setShareModalOpen(false);
         else if (editMemberId != null) setEditMemberId(null);
         else if (addMemberOpen) setAddMemberOpen(false);
@@ -808,7 +812,7 @@ export function FamilyForestView({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [addMemberOpen, editMemberId, handleClearSearchFocus, printModalOpen, searchFocusMemberId, shareModalOpen]);
+  }, [addMemberOpen, editMemberId, handleClearSearchFocus, kinshipSidebarOpen, printModalOpen, searchFocusMemberId, shareModalOpen]);
 
   const handleSearchSelect = useCallback((person: PersonSummary) => {
     setSelectedMemberId(person.id);
@@ -1022,9 +1026,27 @@ export function FamilyForestView({
         onToast={showToast}
       />
 
-      <TreeBackgroundPicker
-        settings={backgroundSettings}
-        onChange={setBackgroundSettings}
+      <div className="tree-bottom-left-tools">
+        <TreeBackgroundPicker
+          settings={backgroundSettings}
+          onChange={setBackgroundSettings}
+        />
+        <button
+          type="button"
+          className="pill tree-kinship-btn"
+          onClick={() => setKinshipSidebarOpen(true)}
+        >
+          <IconKinship />
+          <span>صلة القرابة</span>
+        </button>
+      </div>
+
+      <KinshipSidebar
+        open={kinshipSidebarOpen}
+        members={members}
+        familyId={familyId}
+        people={people}
+        onClose={() => setKinshipSidebarOpen(false)}
       />
 
       {typeof document !== 'undefined' ? createPortal(

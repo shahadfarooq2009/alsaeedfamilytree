@@ -14,7 +14,6 @@ export interface ForestFounderRailData extends Record<string, unknown> {
 
 function ForestFounderRailComponent({
   data,
-  style,
   width,
   height,
 }: NodeProps<Node<ForestFounderRailData>>) {
@@ -37,7 +36,7 @@ function ForestFounderRailComponent({
       width={svgWidth}
       height={svgHeight}
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-      style={{ ...style, overflow: 'visible', display: 'block' }}
+      style={{ overflow: 'visible', display: 'block' }}
       aria-hidden
     >
       {busPath ? (

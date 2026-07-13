@@ -159,6 +159,8 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
+export { BotanicalTree } from './BotanicalTree';
+
 export default function FamilyTreeMap({ people, demoFallback = false }: FamilyTreeMapProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const positionLockedRef = useRef(false);

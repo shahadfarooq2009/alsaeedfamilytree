@@ -1633,6 +1633,40 @@ body {
   stroke: #f8f6ee;
 }
 
+.tree-header-kinship {
+  direction: rtl;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fffdf8;
+  color: #4a5836;
+  border: 1px solid rgba(92, 72, 40, 0.2);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-pill);
+  padding: 11px 18px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .2s, background .2s, border-color .2s;
+  white-space: nowrap;
+}
+
+.tree-header-kinship:hover {
+  background: #f7f3ea;
+  border-color: rgba(92, 72, 40, 0.3);
+}
+
+.tree-header-kinship:active {
+  transform: translateY(1px);
+}
+
+.tree-header-kinship .ico {
+  width: 18px;
+  height: 18px;
+  stroke: #5c6b4d;
+}
+
 /* ---- branch labels ---- */
 .branch-labels { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .branch-label {
@@ -3977,6 +4011,50 @@ body {
 .canvas.is-solid-bg .tree-top-gradient,
 .canvas.is-solid-bg .tree-bottom-gradient {
   display: none;
+}
+
+.tree-bottom-left-tools {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.tree-bottom-left-tools > * {
+  pointer-events: auto;
+}
+
+.tree-bottom-left-tools .tree-bg-picker {
+  position: static;
+}
+
+.tree-kinship-btn {
+  direction: rtl;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: rgba(255, 252, 244, 0.94);
+  color: #3d4635;
+  border: 1px solid rgba(90, 118, 74, 0.28);
+  box-shadow: 0 10px 24px rgba(43, 66, 25, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.tree-kinship-btn:hover {
+  background: rgba(102, 118, 87, 0.1);
+  border-color: rgba(79, 128, 56, 0.4);
+}
+
+.tree-kinship-btn .ico {
+  width: 18px;
+  height: 18px;
+  stroke: #5c6b4d;
 }
 
 .tree-bg-picker {

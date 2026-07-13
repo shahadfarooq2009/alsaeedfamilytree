@@ -63,7 +63,7 @@ export async function repairCorruptedParentLinks(
       await updatePerson(familyId, person.id, {
         first_name: firstName,
         full_name: fullName,
-        ...(person.father_id == null ? { father_name_text: fatherForName } : {}),
+        ...(person.father?.id == null ? { father_name_text: fatherForName } : {}),
       });
       updated += 1;
     } catch {

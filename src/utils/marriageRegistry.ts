@@ -111,21 +111,21 @@ export function findMarriageByPersonId(
 }
 
 function marriagesReferToSameCouple(left: MarriageRecord, right: MarriageRecord): boolean {
-  const sameHusband = (
+  const sameHusband = Boolean(
     (left.husbandId != null && left.husbandId === right.husbandId)
     || (
       left.husbandName
       && right.husbandName
       && normalizeMarriageName(left.husbandName) === normalizeMarriageName(right.husbandName)
-    )
+    ),
   );
-  const sameWife = (
+  const sameWife = Boolean(
     (left.wifeId != null && left.wifeId === right.wifeId)
     || (
       left.wifeName
       && right.wifeName
       && normalizeMarriageName(left.wifeName) === normalizeMarriageName(right.wifeName)
-    )
+    ),
   );
   return sameHusband && sameWife;
 }

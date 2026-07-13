@@ -15,6 +15,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   type Node,
+  type NodeMouseHandler,
   type OnMove,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -25,6 +26,7 @@ import type { MemberPanelAnchor } from '../../utils/computeMemberPanelAnchor';
 import {
   buildFamilyTreeFlowLayout,
   type FamilyTreeNodeData,
+  type FlowNodeData,
 } from '../../utils/buildFamilyTreeFlowLayout';
 import { prepareBranchSubtreeForFlow } from '../../utils/familyForest/getBranchSubtreeMembers';
 import { getForestBranchColor } from '../../utils/familyForest/branchColors';
@@ -176,7 +178,7 @@ const BranchFamilyTree = forwardRef<BranchFamilyTreeHandle, BranchFamilyTreeProp
     },
   }), [applyFitViewport]);
 
-  const onNodeClick = useCallback((_event: MouseEvent, node: Node) => {
+  const onNodeClick: NodeMouseHandler<Node<FlowNodeData>> = useCallback((_event, node) => {
     if (node.type !== 'familyMember' || !onMemberDrillDown) return;
 
     const data = node.data as FamilyTreeNodeData;
@@ -194,13 +196,13 @@ const BranchFamilyTree = forwardRef<BranchFamilyTreeHandle, BranchFamilyTreeProp
     }, data.generationClass === 'g3');
   }, [canvasRef, onMemberDrillDown]);
 
-  const onNodeMouseEnter = useCallback((_event: MouseEvent, node: Node) => {
+  const onNodeMouseEnter: NodeMouseHandler<Node<FlowNodeData>> = useCallback((_event, node) => {
     if (node.type !== 'familyMember' || !onMemberHoverStart) return;
     const data = node.data as FamilyTreeNodeData;
     onMemberHoverStart(data.memberId);
   }, [onMemberHoverStart]);
 
-  const onNodeMouseLeave = useCallback((_event: MouseEvent, node: Node) => {
+  const onNodeMouseLeave: NodeMouseHandler<Node<FlowNodeData>> = useCallback((_event, node) => {
     if (node.type !== 'familyMember' || !onMemberHoverEnd) return;
     onMemberHoverEnd();
   }, [onMemberHoverEnd]);

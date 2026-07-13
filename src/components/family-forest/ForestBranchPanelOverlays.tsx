@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { useViewport, type Node } from '@xyflow/react';
 
 import type { ForestBranchPanelData, ForestFlowNodeData } from '../../utils/familyForest/buildFamilyForestLayout';
@@ -29,7 +29,7 @@ function ForestBranchPanelOverlaysComponent({ panels }: ForestBranchPanelOverlay
               width: width * viewport.zoom,
               height: height * viewport.zoom,
               '--branch-color': data.branchColor,
-            }}
+            } as CSSProperties}
           >
             {data.memberCount > 0 ? (
               <div className="family-forest-branch-panel__footer">

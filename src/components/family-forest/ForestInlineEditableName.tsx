@@ -64,6 +64,9 @@ export function ForestInlineEditableName({
   const saveName = useCallback(async () => {
     if (!context?.editable || saving) return;
 
+    const familyId = context.familyId;
+    if (familyId == null) return;
+
     const trimmed = draft.trim();
     if (!trimmed) {
       cancelEditing();
@@ -77,10 +80,10 @@ export function ForestInlineEditableName({
 
     setSaving(true);
     try {
-      await updatePerson(context.familyId, memberId, buildNamePayload(trimmed));
+      await updatePerson(familyId, memberId, buildNamePayload(trimmed));
       setLocalDisplay(trimmed);
       setEditing(false);
-      await context.onMemberUpdated();
+      await context.onMemberUpdated?.();
       context.onToast?.('تم تحديث الاسم');
     } catch (err) {
       context.onToast?.(toApiError(err).message);
